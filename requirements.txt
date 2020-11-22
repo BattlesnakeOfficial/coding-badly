@@ -1,1 +1,2 @@
+astar==0.92
 CherryPy==18.5.0
