@@ -1,5 +1,6 @@
 import os
-import random
+
+# import random
 
 import cherrypy
 
@@ -22,6 +23,7 @@ class Server(object):
         return {
             "apiversion": snake.apiversion,
             "author": snake.author,
+            "version": snake.version,
             "color": snake.color,
             "head": snake.head,
             "tail": snake.tail,

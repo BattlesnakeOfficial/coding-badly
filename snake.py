@@ -6,6 +6,7 @@ class Battlesnake:
     def __init__(self):
         self.apiversion = "1"
         self.author = "bvanvugt"
+        self.version = "v4"
         self.color = "#36627b"
         self.head = "silly"
         self.tail = "curled"
@@ -50,21 +51,16 @@ class Battlesnake:
             # technically possible, and shouldn't be removed in
             # this func...
 
-            # if snake["id"] != request["you"]["id"]:
-            #     snake_head = snake["body"][0]
-            #     necks.extend([{
-            #         "x": snake_head["x"] - 1,
-            #         "y": snake_head["y"]
-            #     }, {
-            #         "x": snake_head["x"] + 1,
-            #         "y": snake_head["y"]
-            #     }, {
-            #         "x": snake_head["x"],
-            #         "y": snake_head["y"] - 1
-            #     }, {
-            #         "x": snake_head["x"],
-            #         "y": snake_head["y"] + 1
-            #     }])
+            if snake["length"] > request["you"]["length"]:
+                snake_head = snake["body"][0]
+                necks.extend(
+                    [
+                        {"x": snake_head["x"] - 1, "y": snake_head["y"]},
+                        {"x": snake_head["x"] + 1, "y": snake_head["y"]},
+                        {"x": snake_head["x"], "y": snake_head["y"] - 1},
+                        {"x": snake_head["x"], "y": snake_head["y"] + 1},
+                    ]
+                )
 
             for neck in necks:
                 if (neck["x"] == head["x"] + 1) and (neck["y"] == head["y"]):
@@ -103,14 +99,24 @@ class Battlesnake:
         distances.sort(key=lambda x: x[1], reverse=actually_furthest)
         return distances[0][0]
 
+    def _order_by_distance(self, start_coords, targets):
+        distances = []
+        for coords in targets:
+            d = self._calc_distance(start_coords, coords)
+            distances.append((coords, d))
+        distances.sort(key=lambda x: x[1])
+        return [d[0] for d in distances]
+
     def _calc_astar(self, request, start_coords, end_coords):
         astar_solver = BattlesnakeAStarPathfinder(request["board"])
-        return astar_solver.astar(
-            (start_coords["x"], start_coords["y"]), (end_coords["x"], end_coords["y"])
-        )
+        st = (start_coords["x"], start_coords["y"])
+        et = (end_coords["x"], end_coords["y"])
+        return astar_solver.astar(st, et)
 
-    def _calc_path_exists(self, request, start_coords, end_coords):
+    def _calc_path_exists(self, request, start_coords, end_coords, debug=False):
         astar_path = self._calc_astar(request, start_coords, end_coords)
+        if debug:
+            print(f"  A*: {start_coords}, {end_coords}, {astar_path}")
         return astar_path is not None
 
     def _calc_path_length(self, request, start_coords, end_coords):
@@ -124,11 +130,31 @@ class Battlesnake:
 
         head_coords = request["you"]["head"]
         tail_coords = request["you"]["body"][-1]
-        closest_food = self._calc_closest_coord(head_coords, request["board"]["food"])
+        # closest_food = self._calc_closest_coord(head_coords, request["board"]["food"])
+        ordered_food = self._order_by_distance(head_coords, request["board"]["food"])
 
-        if request["you"]["health"] <= 50:
-            if self._calc_path_exists(request, closest_food, tail_coords):
-                targets.append(closest_food)
+        our_length = request["you"]["length"]
+        max_opponent_length = max(
+            [
+                s["length"]
+                for s in request["board"]["snakes"]
+                if s["id"] != request["you"]["id"]
+            ]
+        )
+        if our_length < (max_opponent_length + 2):
+            print(" HUNGRY")
+            # We're hungry
+            for food_coords in ordered_food:
+                # TODO: This doesn't work when we just ate because our tail is doubled and thus untraversable.
+                if self._calc_path_exists(
+                    request, food_coords, tail_coords, debug=True
+                ):
+                    print(f"  FOOD: {food_coords}")
+                    targets.append(food_coords)
+
+        # if request["you"]["health"] <= 50:
+        #     if self._calc_path_exists(request, closest_food, tail_coords):
+        #         targets.append(closest_food)
 
         targets.append(tail_coords)
         targets.append({"x": tail_coords["x"] + 1, "y": tail_coords["y"]})
