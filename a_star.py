@@ -2,8 +2,11 @@ from astar import AStar
 
 
 class BattlesnakeAStarPathfinder(AStar):
-    def __init__(self, board):
+    def __init__(self, board, target=None, force_target_traversible=False):
         self._board = board
+
+        self._target = target
+        self._force_target_traversible = force_target_traversible
 
     def heuristic_cost_estimate(self, n1, n2):
         # Manhattan
@@ -22,6 +25,11 @@ class BattlesnakeAStarPathfinder(AStar):
 
         actual_neighbors = []
         for possible_neighbor in possible_neighbors:
+            if self._target and self._force_target_traversible:
+                if possible_neighbor == self._target:
+                    actual_neighbors.append(possible_neighbor)
+                    continue
+
             if possible_neighbor[0] < 0:
                 continue
             if possible_neighbor[0] >= self._board["width"]:
@@ -41,4 +49,5 @@ class BattlesnakeAStarPathfinder(AStar):
             if not occupied:
                 actual_neighbors.append(possible_neighbor)
 
+        # print(f" NBORS: {node}, {actual_neighbors}")
         return actual_neighbors

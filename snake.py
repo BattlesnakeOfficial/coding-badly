@@ -6,13 +6,14 @@ class Battlesnake:
     def __init__(self):
         self.apiversion = "1"
         self.author = "bvanvugt"
-        self.version = "v4"
+        self.version = "Day 5"
         self.color = "#36627b"
         self.head = "silly"
         self.tail = "curled"
 
     def move(self, request):
         turn = request["turn"]
+        print(f"\n{turn}")
 
         move = "up"
         possible_moves = self._calc_possible_moves(request)
@@ -24,27 +25,33 @@ class Battlesnake:
         return move
 
     def _calc_possible_moves(self, request):
-        possible_moves = ["up", "down", "left", "right"]
-
-        def remove_move(move):
-            if move in possible_moves:
-                possible_moves.remove(move)
+        risk = {"up": 0, "down": 0, "left": 0, "right": 0}
 
         head = request["you"]["body"][0]
 
         # Remove oob from possible moves
         if head["x"] == 0:
-            remove_move("left")
+            risk["left"] = 100
         if head["y"] == 0:
-            remove_move("down")
+            risk["down"] = 100
         if head["x"] == request["board"]["width"] - 1:
-            remove_move("right")
+            risk["right"] = 100
         if head["y"] == request["board"]["height"] - 1:
-            remove_move("up")
+            risk["up"] = 100
 
         # Remove our necks from possible moves
         for snake in request["board"]["snakes"]:
             necks = snake["body"][:-1]
+
+            for neck in necks:
+                if (neck["x"] == head["x"] + 1) and (neck["y"] == head["y"]):
+                    risk["right"] = 100
+                if (neck["x"] == head["x"] - 1) and (neck["y"] == head["y"]):
+                    risk["left"] = 100
+                if (neck["x"] == head["x"]) and (neck["y"] == head["y"] + 1):
+                    risk["up"] = 100
+                if (neck["x"] == head["x"]) and (neck["y"] == head["y"] - 1):
+                    risk["down"] = 100
 
             # This code removes moves that may collide with
             # next moves of other snakes. These moves are
@@ -52,27 +59,45 @@ class Battlesnake:
             # this func...
 
             if snake["length"] > request["you"]["length"]:
+                # We'll lose head-to-head
                 snake_head = snake["body"][0]
-                necks.extend(
-                    [
-                        {"x": snake_head["x"] - 1, "y": snake_head["y"]},
-                        {"x": snake_head["x"] + 1, "y": snake_head["y"]},
-                        {"x": snake_head["x"], "y": snake_head["y"] - 1},
-                        {"x": snake_head["x"], "y": snake_head["y"] + 1},
-                    ]
-                )
+                necks = [
+                    {"x": snake_head["x"] - 1, "y": snake_head["y"]},
+                    {"x": snake_head["x"] + 1, "y": snake_head["y"]},
+                    {"x": snake_head["x"], "y": snake_head["y"] - 1},
+                    {"x": snake_head["x"], "y": snake_head["y"] + 1},
+                ]
 
-            for neck in necks:
-                if (neck["x"] == head["x"] + 1) and (neck["y"] == head["y"]):
-                    remove_move("right")
-                if (neck["x"] == head["x"] - 1) and (neck["y"] == head["y"]):
-                    remove_move("left")
-                if (neck["x"] == head["x"]) and (neck["y"] == head["y"] + 1):
-                    remove_move("up")
-                if (neck["x"] == head["x"]) and (neck["y"] == head["y"] - 1):
-                    remove_move("down")
+                for neck in necks:
+                    if (neck["x"] == head["x"] + 1) and (neck["y"] == head["y"]):
+                        risk["right"] = max(risk["right"], 50)
+                    if (neck["x"] == head["x"] - 1) and (neck["y"] == head["y"]):
+                        risk["left"] = max(risk["left"], 50)
+                    if (neck["x"] == head["x"]) and (neck["y"] == head["y"] + 1):
+                        risk["up"] = max(risk["up"], 50)
+                    if (neck["x"] == head["x"]) and (neck["y"] == head["y"] - 1):
+                        risk["down"] = max(risk["down"], 50)
 
-        return possible_moves
+        sorted_risks = [
+            (x[0], x[1]) for x in sorted(risk.items(), key=lambda x: x[1]) if x[1] < 100
+        ]
+        sorted_moves = []
+        for i in range(100):
+            move_group = []
+            for sorted_risk in sorted_risks:
+                if sorted_risk[1] == i:
+                    move_group.append(sorted_risk[0])
+            if len(move_group) > 0:
+                sorted_moves.append(move_group)
+        print(sorted_moves)
+        return sorted_moves
+
+        # sorted_moves = [
+        #     x[0] for x in
+        #     sorted(risk.items(), key=lambda x: x[1])
+        #     if x[1] < 100
+        # ]
+        # return sorted_moves
 
     def _calc_move_coords(self, coords, move):
         if move == "up":
@@ -107,14 +132,29 @@ class Battlesnake:
         distances.sort(key=lambda x: x[1])
         return [d[0] for d in distances]
 
-    def _calc_astar(self, request, start_coords, end_coords):
-        astar_solver = BattlesnakeAStarPathfinder(request["board"])
+    def _calc_astar(
+        self, request, start_coords, end_coords, force_target_traversible=False
+    ):
         st = (start_coords["x"], start_coords["y"])
         et = (end_coords["x"], end_coords["y"])
+        astar_solver = BattlesnakeAStarPathfinder(
+            request["board"],
+            target=et,
+            force_target_traversible=force_target_traversible,
+        )
         return astar_solver.astar(st, et)
 
-    def _calc_path_exists(self, request, start_coords, end_coords, debug=False):
-        astar_path = self._calc_astar(request, start_coords, end_coords)
+    def _calc_path_exists(
+        self,
+        request,
+        start_coords,
+        end_coords,
+        force_target_traversible=False,
+        debug=False,
+    ):
+        astar_path = self._calc_astar(
+            request, start_coords, end_coords, force_target_traversible
+        )
         if debug:
             print(f"  A*: {start_coords}, {end_coords}, {astar_path}")
         return astar_path is not None
@@ -128,9 +168,12 @@ class Battlesnake:
     def _calc_targets(self, request):
         targets = []
 
+        for snake in request["board"]["snakes"]:
+            if snake["length"] < request["you"]["length"]:
+                targets.append(snake["head"])
+
         head_coords = request["you"]["head"]
         tail_coords = request["you"]["body"][-1]
-        # closest_food = self._calc_closest_coord(head_coords, request["board"]["food"])
         ordered_food = self._order_by_distance(head_coords, request["board"]["food"])
 
         our_length = request["you"]["length"]
@@ -142,19 +185,37 @@ class Battlesnake:
             ]
         )
         if our_length < (max_opponent_length + 2):
-            print(" HUNGRY")
-            # We're hungry
+            print(" HUNGRY")  # We're hungry
             for food_coords in ordered_food:
-                # TODO: This doesn't work when we just ate because our tail is doubled and thus untraversable.
                 if self._calc_path_exists(
-                    request, food_coords, tail_coords, debug=True
+                    request,
+                    food_coords,
+                    tail_coords,
+                    force_target_traversible=True,
+                    debug=True,
                 ):
-                    print(f"  FOOD: {food_coords}")
-                    targets.append(food_coords)
+                    is_another_snake_closer = False
+                    our_turns_to_food = self._calc_path_length(
+                        request, head_coords, food_coords
+                    )
+                    for snake in request["board"]["snakes"]:
+                        other_turns_to_food = self._calc_path_length(
+                            request, snake["head"], food_coords
+                        )
+                        if not other_turns_to_food:
+                            continue
 
-        # if request["you"]["health"] <= 50:
-        #     if self._calc_path_exists(request, closest_food, tail_coords):
-        #         targets.append(closest_food)
+                        is_closer = other_turns_to_food < our_turns_to_food
+                        is_bigger = snake["length"] > request["you"]["length"]
+                        if is_closer or (
+                            is_bigger
+                            and other_turns_to_food
+                            and our_turns_to_food == other_turns_to_food
+                        ):
+                            is_another_snake_closer = True
+                    if not is_another_snake_closer:
+                        print(f"  FOOD: {food_coords}")
+                        targets.append(food_coords)
 
         targets.append(tail_coords)
         targets.append({"x": tail_coords["x"] + 1, "y": tail_coords["y"]})
@@ -172,29 +233,37 @@ class Battlesnake:
             if self._calc_path_exists(request, corner_coords, tail_coords):
                 targets.append(corner_coords)
 
+        # Try to chase other snake tails
+        for snake in request["board"]["snakes"]:
+            if snake["id"] == request["you"]["id"]:
+                continue
+            targets.append(snake["body"][-1])
+
         return targets
 
-    def _calc_best_move(self, request, moves, targets):
+    def _calc_best_move(self, request, move_groups, targets):
         head_coords = request["you"]["head"]
 
         for target_coords in targets:
             print(f" TARGET -> {target_coords}")
 
-            distance_moves = []
-            for move in moves:
-                move_coords = self._calc_move_coords(head_coords, move)
-                astar_path_length = self._calc_path_length(
-                    request, move_coords, target_coords
-                )
-                if astar_path_length:
-                    distance_moves.append((move, astar_path_length))
+            for move_group in move_groups:
+                distance_moves = []
+                for move in move_group:
+                    move_coords = self._calc_move_coords(head_coords, move)
+                    astar_path_length = self._calc_path_length(
+                        request, move_coords, target_coords
+                    )
+                    if astar_path_length:
+                        distance_moves.append((move, astar_path_length))
 
-            if distance_moves:
-                distance_moves.sort(key=lambda x: x[1])
-                return distance_moves[0][0]
+                if distance_moves:
+                    distance_moves.sort(key=lambda x: x[1])
+                    return distance_moves[0][0]
 
-        if moves:
-            return moves[0]
+        if move_groups:
+            if move_groups[0]:
+                return move_groups[0][0]
 
         print("   NO VALID MOVES TO ALL TARGETS")
         return "up"

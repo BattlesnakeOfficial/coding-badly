@@ -1,6 +1,5 @@
 import os
-
-# import random
+import random
 
 import cherrypy
 
@@ -65,7 +64,7 @@ class Server(object):
 if __name__ == "__main__":
     server = Server()
 
-    cherrypy.log.screen = None
+    # cherrypy.log.screen = None
     cherrypy.config.update({"server.socket_host": "0.0.0.0"})
     cherrypy.config.update(
         {
