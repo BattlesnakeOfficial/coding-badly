@@ -177,13 +177,15 @@ class Battlesnake:
         ordered_food = self._order_by_distance(head_coords, request["board"]["food"])
 
         our_length = request["you"]["length"]
-        max_opponent_length = max(
-            [
-                s["length"]
-                for s in request["board"]["snakes"]
-                if s["id"] != request["you"]["id"]
-            ]
-        )
+        max_opponent_length = our_length
+        if len(request["board"]["snakes"]) > 1:
+            max_opponent_length = max(
+                [
+                    s["length"]
+                    for s in request["board"]["snakes"]
+                    if s["id"] != request["you"]["id"]
+                ]
+            )
         if our_length < (max_opponent_length + 2):
             print(" HUNGRY")  # We're hungry
             for food_coords in ordered_food:
