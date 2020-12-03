@@ -64,7 +64,9 @@ class Server(object):
 if __name__ == "__main__":
     server = Server()
 
-    # cherrypy.log.screen = None
+    if "DYNO" not in os.environ:
+        cherrypy.log.screen = None
+
     cherrypy.config.update({"server.socket_host": "0.0.0.0"})
     cherrypy.config.update(
         {
