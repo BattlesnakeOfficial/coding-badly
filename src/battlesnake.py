@@ -1,4 +1,5 @@
 import os
+import time
 
 import cherrypy
 
@@ -53,9 +54,6 @@ class Battlesnake:
                         # print(f"TARGETING -> {target_coords}")
                         break
 
-        if not move:
-            move = "up"
-
         # print(f"{turn}: {possible_moves} -> {move}")
         return move
 
@@ -86,6 +84,8 @@ class Server(object):
     def move(self):
         data = cherrypy.request.json
         move = Battlesnake().move(data)
+        if move is None:
+            time.sleep(1)
         return {"move": move}
 
     @cherrypy.expose
