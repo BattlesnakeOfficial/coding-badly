@@ -1,0 +1,2 @@
+{"acceptedMoves": ["right", "down"]}
+{"game":{"id":"804944","ruleset":{"name":"standard","version":"v.1.2.3"},"timeout":500},"turn":200,"you":{"health":100,"id":"you","name":"#22aa34","head":{"x":5,"y":2},"body":[{"x":5,"y":2},{"x":4,"y":2},{"x":3,"y":2},{"x":2,"y":2}]},"board":{"food":[],"height":7,"width":7,"snakes":[{"health":100,"id":"you","name":"#22aa34","head":{"x":5,"y":2},"body":[{"x":5,"y":2},{"x":4,"y":2},{"x":3,"y":2},{"x":2,"y":2}]},{"health":100,"id":"#FFddd2","name":"#FFddd2","head":{"x":6,"y":3},"body":[{"x":6,"y":3},{"x":5,"y":3},{"x":4,"y":3}]}]}}

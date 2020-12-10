@@ -33,8 +33,8 @@ class Battlesnake:
         cherrypy.quickstart(server)
 
     def move(self, request):
-        turn = request["turn"]
-        print(f"\n{turn}")
+        # turn = request["turn"]
+        # print(f"\n{turn}")
 
         move = None
         possible_moves = pathfinding.calc_possible_moves(request)
@@ -50,13 +50,13 @@ class Battlesnake:
                         request, current_coords, target_coords
                     )
                     if move:
-                        print(f"TARGETING -> {target_coords}")
+                        # print(f"TARGETING -> {target_coords}")
                         break
 
         if not move:
             move = "up"
 
-        print(f"{turn}: {possible_moves} -> {move}")
+        # print(f"{turn}: {possible_moves} -> {move}")
         return move
 
 
