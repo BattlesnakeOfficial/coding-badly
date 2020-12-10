@@ -1,2 +1,3 @@
 astar==0.92
 CherryPy==18.5.0
+parameterized==0.7.4
