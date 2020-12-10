@@ -1,5 +1,5 @@
 import floodfill
-import pathfinding
+import util
 
 
 def calc_targets(request):
@@ -9,7 +9,7 @@ def calc_targets(request):
 
     ordered_food = sorted(
         request["board"]["food"],
-        key=lambda x: pathfinding.calc_manhattan_distance(head_coords, x),
+        key=lambda x: util.calc_manhattan_distance(head_coords, x),
     )
 
     food_scores = []
