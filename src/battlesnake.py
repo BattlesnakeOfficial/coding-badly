@@ -14,8 +14,8 @@ class Battlesnake:
         self.apiversion = "1"
         self.author = "bvanvugt"
         self.version = "v2"
-        self.color = "#E80978"
-        self.head = "shades"
+        self.color = "#316000"  # "#E80978"
+        self.head = "beluga"  # "shades"
         self.tail = "bolt"
 
     def run(self):
