@@ -5,7 +5,7 @@ This is a basic implementation of the [Battlesnake API](https://docs.battlesnake
 ### Technologies Used
 
 * [Python3](https://www.python.org/)
-* [CherryPy](https://cherrypy.org/)
+* [CherryPy](https://cherrypy.dev/)
 
 
 ## Prerequisites
